@@ -1,0 +1,25 @@
+# Dataset (CRUCIAL: Prevents uploading large files that break Git)
+data/
+
+# Experiment tracking logs
+runs/*.csv
+
+# PyCharm / IDE files
+.idea/
+.vscode/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Python cache and virtual environments
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+ENV/
+
+# OS generated files
+.DS_Store
+Thumbs.db
