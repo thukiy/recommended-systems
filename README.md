@@ -58,7 +58,7 @@ To run this project locally, ensure you have Python 3.9+ installed.
 
 1.  **Clone the repository:**
     ```bash
-    git clone (https://github.com/thukiy/recommended-systems.git)
+    git clone https://github.com/thukiy/recommended-systems.git
     cd travelbuddy
     ```
 2.  **Create a virtual environment (Optional but recommended):**
