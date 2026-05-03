@@ -5,9 +5,9 @@ import pandas as pd
 
 class ContentBasedRecommender:
     """
-    Content-based recommender using TF-IDF item representations.
-    Learns item vectors from metadata and builds user profiles as the mean of
-    vectors from previously interacted items.
+    Content-based recommender using TF-IDF recipe representations.
+    Learns recipe vectors from metadata and builds user profiles as the mean of
+    vectors from previously liked recipes.
     """
 
     def __init__(
@@ -53,8 +53,15 @@ class ContentBasedRecommender:
         return text
 
     @staticmethod
-    def _safe_strftime_days(delta):
+    def _timedelta_to_days(delta):
         return float(delta.total_seconds()) / 86400.0
+    
+    @staticmethod
+    def _clean_feature_name(feature):
+        if "_" in feature:
+            col, value = feature.split("_", 1)
+            return f"{col}: {value}"
+        return feature
 
     def _item_to_document(self, row, item_col, text_cols, metadata_cols):
         tokens = []
@@ -136,7 +143,7 @@ class ContentBasedRecommender:
         if self.recency_decay <= 0.0 or reference_time is None or time_col is None or pd.isna(row[time_col]):
             return base_weight
 
-        age_days = self._safe_strftime_days(reference_time - row[time_col])
+        age_days = self._timedelta_to_days(reference_time - row[time_col])
         recency_weight = np.exp(-self.recency_decay * max(0.0, age_days))
         return base_weight * recency_weight
 
@@ -176,7 +183,7 @@ class ContentBasedRecommender:
             profile = weighted.sum(axis=0) / denom
             self.user_profiles[user_id] = csr_matrix(profile)
 
-    def fit(self, train_df, items_df, user_col='user_id', item_col='venue_id'):
+    def fit(self, train_df, items_df, user_col='user_id', item_col='recipe_id'):
         from sklearn.feature_extraction.text import TfidfVectorizer
 
         print("Training Content-Based Recommender...")
@@ -253,7 +260,7 @@ class ContentBasedRecommender:
 
         top = np.argsort(overlap.data)[-top_n:][::-1]
         feat_ids = overlap.indices[top]
-        feats = [self.feature_names[i] for i in feat_ids]
+        feats = [self._clean_feature_name(self.feature_names[i]) for i in feat_ids]
         if not feats:
             return "Recommended due to overall profile match."
         return f"Recommended because it overlaps on: {', '.join(feats)}."
@@ -304,7 +311,7 @@ class ContentBasedRecommender:
         return explained
 
     @staticmethod
-    def cold_item_set(train_df, test_df, item_col='venue_id'):
+    def cold_item_set(train_df, test_df, item_col='recipe_id'):
         train_items = set(train_df[item_col].unique())
         return set(test_df[item_col].unique()) - train_items
 

@@ -29,7 +29,7 @@ class BiasedMatrixFactorization:
         self.popular_fallback = []
         self.all_items_set = set()
 
-    def fit(self, train_df, user_col='user_id', item_col='venue_id'):
+    def fit(self, train_df, user_col='user_id', item_col='recipe_id'):
         print(f"Training Biased MF (k={self.k}, epochs={self.epochs})...")
 
         unique_users = train_df[user_col].unique()
@@ -100,7 +100,15 @@ class BiasedMatrixFactorization:
     def recommend(self, user_id, user_history, k=10):
         # Return popularity-based recommendations for unseen users
         if user_id not in self.user_mapping:
-            return self.popular_fallback[:k]
+            recommendations = []
+            seen = set(user_history)
+            for item in self.popular_fallback:
+                if item in seen:
+                    continue
+                recommendations.append(item)
+                if len(recommendations) == k:
+                    break
+            return recommendations
 
         u_idx = self.user_mapping[user_id]
 
@@ -142,7 +150,7 @@ class BPRMatrixFactorization:
 
         self.popular_fallback = []
 
-    def fit(self, train_df, user_col='user_id', item_col='venue_id'):
+    def fit(self, train_df, user_col='user_id', item_col='recipe_id'):
         print(f"Training BPR MF (k={self.k}, epochs={self.epochs})...")
 
         unique_users = train_df[user_col].unique()
@@ -203,7 +211,15 @@ class BPRMatrixFactorization:
 
     def recommend(self, user_id, user_history, k=10):
         if user_id not in self.user_mapping:
-            return self.popular_fallback[:k]
+            recommendations = []
+            seen = set(user_history)
+            for item in self.popular_fallback:
+                if item in seen:
+                    continue
+                recommendations.append(item)
+                if len(recommendations) == k:
+                    break
+            return recommendations
 
         u_idx = self.user_mapping[user_id]
 
