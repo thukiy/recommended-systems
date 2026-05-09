@@ -18,7 +18,7 @@ class ItemItemKNN:
         self.item_sim_matrix = None
         self.popular_fallback = []
 
-    def fit(self, train_df, user_col='user_id', item_col='venue_id'):
+    def fit(self, train_df, user_col='user_id', item_col='recipe_id'):
         print(f"Training Item-Item kNN (k={self.k_neighbors}, shrinkage={self.shrinkage})...")
 
         unique_users = train_df[user_col].unique()
@@ -109,7 +109,7 @@ class ItemItemKNN:
                     # Find which history item contributed the maximum similarity score
                     best_hist_idx = max(history_indices, key=lambda h: self.item_sim_matrix[h, rec_idx])
                     hist_name = self.reverse_item_mapping[best_hist_idx]
-                    exp = f"Recommended because it is similar to {hist_name} which you visited recently."
+                    exp = f"Recommended because it is similar to a previously liked recipe (recipe_id={hist_name})."
 
                 explained_recs.append((self.reverse_item_mapping[rec_idx], exp))
             return explained_recs[:k]

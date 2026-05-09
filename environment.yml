@@ -1,0 +1,20 @@
+name: recommended-systems
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pandas
+  - numpy
+  - scipy
+  - scikit-learn
+  - matplotlib
+  - jupyter
+
+# To create the environment, run:
+# conda env create -f environment.yml
+
+# To activate the environment, run:
+# conda activate recommended-systems
+
+# To update the environment, run:
+# conda env update -f environment.yml --prune

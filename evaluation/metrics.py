@@ -22,6 +22,7 @@ def novelty_at_k(recommended_items, train_item_counts, total_train_interactions,
 
     return novelty_score / len(top_k_recs) if len(top_k_recs) > 0 else 0.0
 
+
 def recall_at_k(recommended_items, true_items, k=10):
     """
     Recall@K for leave-last-out evaluation.
@@ -53,7 +54,8 @@ def ndcg_at_k(recommended_items, true_items, k=10):
             # Relevance is binary; discount depends on the rank position.
             dcg += 1.0 / np.log2((i + 1) + 1)
 
-    # With a single relevant test item, the ideal DCG is achieved at rank 1.
+    # In leave-last-out evaluation, each user has exactly one relevant test item.
+    # Therefore, the ideal DCG is always 1.0 because the best possible rank is position 1.
     idcg = 1.0
 
     return dcg / idcg

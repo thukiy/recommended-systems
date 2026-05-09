@@ -1,96 +1,165 @@
-# TravelBuddy: Context-Aware POI Recommender
+# Food.com Recipe Recommender
 
 **Course:** CDS121 - Recommender Systems  
 **Institution:** Fachhochschule Graubünden (FHGR)  
 **Team:** Isabelle, Philip, Thuvaraka  
 
 ## Project Overview
-TravelBuddy is a recommender system designed to suggest exploratory activities and Points of Interest (POIs) to travelers. Instead of relying on explicit ratings, the system learns from sparse, implicit feedback (user check-ins) to generate highly personalized, localized recommendations. 
+This project builds and evaluates a recommender system for Food.com recipes.  
+The goal is to recommend relevant recipes from historical user preferences while comparing different recommendation paradigms under a strict offline evaluation setup.
 
-This repository contains the complete end-to-end pipeline, including data preprocessing, strict temporal evaluation, and the implementation of various collaborative filtering algorithms.
+Our current pipeline covers:
+- data exploration on raw Food.com data
+- conversion of explicit ratings into positive implicit feedback
+- strict temporal leave-last-out evaluation
+- popularity, random, trending, matrix factorization, and content-based baselines
 
 ## Dataset
-We use the **Foursquare NYC Check-in Dataset (TSMC2014)**. 
-*   **Why this dataset?** It provides persistent user histories with exact timestamps, which is strictly required for preventing time-travel leakage during offline evaluation.
-*   **Semantic Filtering:** We aggressively filtered out daily routine categories (e.g., *Home, Office, Subway, Train Station, Gym*) to align the candidate universe with our tourism business objective.
+We use the **Food.com Recipes and User Interactions** dataset from Kaggle:
 
-**Important:** The dataset is too large for version control and is ignored via `.gitignore`. 
-To run this code locally, you must download the dataset manually:
-1. Download the dataset from[Kaggle: Foursquare NYC and Tokyo Check-ins](https://www.kaggle.com/datasets/chetanism/foursquare-nyc-and-tokyo-checkin-dataset).
+https://www.kaggle.com/datasets/shuyangli94/food-com-recipes-and-user-interactions
+
+For our project, we work with the raw files:
+- `RAW_interactions.csv`
+- `RAW_recipes.csv`
+
+### Why This Dataset
+- It contains long-term user histories from 2000 to 2018.
+- It includes both interaction data and rich recipe metadata.
+- It is well suited for comparing collaborative filtering and content-based methods.
+
+### Modeling Assumption
+Although the dataset contains explicit ratings, we currently transform it into a Top-N recommendation problem:
+- positive feedback: `rating >= 4`
+- users with fewer than 2 positive interactions are excluded from evaluation
+
+### Important
+The dataset is too large for version control and is ignored via `.gitignore`.
+
+To run the project locally:
+1. Download the dataset from Kaggle.
 2. Extract the archive.
-3. Place the file `dataset_TSMC2014_NYC.csv` into the `data/raw/` directory of this project.
+3. Place `RAW_interactions.csv` and `RAW_recipes.csv` into `data/raw/`.
 
 ## Repository Structure
 
 ```text
-travelbuddy/
+recommended-systems/
 │
-├── data/                           # Ignored by Git
-│   └── raw/                        
-│       └── dataset_TSMC2014_NYC.csv # Put the downloaded Kaggle data here!
+├── data/
+│   └── raw/
+│       ├── RAW_interactions.csv
+│       └── RAW_recipes.csv
 │
-├── evaluation/                     # The Evaluation Harness (Week 2)
-│   ├── __init__.py
+├── evaluation/
 │   ├── metrics.py                  # Recall@K, NDCG@K, Coverage@K, Novelty@K
-│   └── split.py                    # Strict Leave-Last-Out temporal split
+│   └── split.py                    # Temporal leave-last-out split
 │
-├── models/                         # Recommender Algorithms
-│   ├── __init__.py
+├── models/
 │   ├── baselines.py                # Popularity, Random, Trending
-│   ├── knn.py                      # Item-Item kNN (with Shrinkage & Explainability)
-│   └── mf.py                       # Biased MF (Squared Loss) & BPR MF
+│   ├── content_based.py            # TF-IDF content-based recommender + hybrid scaffold
+│   ├── knn.py                      # Item-item kNN
+│   └── mf.py                       # Biased MF and BPR MF
 │
-├── notebooks/                      # Experimentation & Pipeline Execution
-│   ├── 01_data_exploration.ipynb   # Sanity checks, sparsity analysis, long-tail plots
-│   └── 02_baseline_evaluation.ipynb # Master evaluation loop & diagnostics
+├── notebooks/
+│   ├── 01_data_exploration.ipynb   # Exploration of interactions + recipe metadata
+│   └── 02_baseline_evaluation.ipynb # Baseline training, evaluation, diagnostics
 │
-├── runs/                           # Experiment Tracking
-│   └── runs.csv                    # Automatically logs model configs and metrics
+├── runs/
+│   └── runs.csv                    # Experiment logging
 │
-├── requirements.txt                # Python dependencies
-├── .gitignore                      
-└── README.md                       # Project documentation
+├── environment.yml
+├── requirements.txt
+└── README.md
 ```
 
-## Setup & Installation
+## Setup
 
-To run this project locally, ensure you have Python 3.9+ installed.
+### Conda / Mamba
+```bash
+conda env create -f environment.yml
+conda activate recommended-systems
+```
 
-1.  **Clone the repository:**
-    ```bash
-    git clone https://github.com/thukiy/recommended-systems.git
-    cd travelbuddy
-    ```
-2.  **Create a virtual environment (Optional but recommended):**
-    ```bash
-    python -m venv .venv
-    source .venv/bin/activate  # On Windows use: .venv\Scripts\activate
-    ```
-3.  **Install dependencies:**
-    ```bash
-    pip install -r requirements.txt
-    ```
-    *(Required packages: `pandas`, `numpy`, `scikit-learn`, `scipy`, `matplotlib`, `jupyter`)*
-4.  **Add the dataset:**
-    Ensure `dataset_TSMC2014_NYC.csv` is placed inside `data/raw/`.
-5.  **Run the Evaluation Pipeline:**
-    Open `notebooks/02_baseline_evaluation.ipynb` and execute all cells to train the models and generate the final results table.
+or
 
-## Model Implementations & Results
+```bash
+mamba env create -f environment.yml
+conda activate recommended-systems
+```
 
-This repository currently implements the core collaborative filtering algorithms covered in Weeks 1-4 of the CDS121 curriculum. All models are evaluated using a strict **Leave-Last-Out** temporal split to simulate real-world deployment.
+### Pip
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
 
-### Current Baseline Metrics (K=20)
+## How To Run
+
+### 1. Data Exploration
+Open and run:
+
+```bash
+jupyter notebook notebooks/01_data_exploration.ipynb
+```
+
+This notebook explores:
+- rating distribution
+- sparsity
+- cold users / cold items
+- metadata quality
+- join coverage between interactions and recipes
+- candidate interaction rules for modeling
+
+### 2. Baseline Evaluation
+Open and run:
+
+```bash
+jupyter notebook notebooks/02_baseline_evaluation.ipynb
+```
+
+This notebook currently:
+- loads `RAW_interactions.csv` and `RAW_recipes.csv`
+- creates positive implicit feedback from `rating >= 4`
+- applies a strict temporal leave-last-out split
+- drops users with tied final timestamps to avoid ambiguous train/test boundaries
+- trains baseline recommenders
+- computes Recall@20, NDCG@20, Coverage@20, and Novelty@20
+- logs runs to `runs/runs.csv`
+
+## Current Results
+
+Current strict Food.com baseline results (`K=20`):
+
 | Model | Recall@20 | NDCG@20 | Coverage@20 | Novelty@20 |
 | :--- | :--- | :--- | :--- | :--- |
-| Popularity | 0.0065 | 0.0021 | 0.10% | 9.46 |
-| Trending (30d) | 0.0037 | 0.0012 | 0.07% | 10.92 |
-| Random | 0.0009 | 0.0002 | 50.25% | 16.01 |
-| Item-Item kNN | 0.0028 | 0.0010 | 16.20% | 13.37 |
-| Biased MF (SQ) | 0.0018 | 0.0005 | 0.40% | 10.01 |
-| **BPR MF** | **0.0166** | **0.0048** | **2.03%** | **10.20** |
+| Popularity | 0.0312 | 0.0125 | 0.0367% | 10.3203 |
+| Trending (180d) | 0.0029 | 0.0018 | 0.0173% | 15.6854 |
+| Random | 0.0001 | 0.0000 | 99.1702% | 18.3655 |
+| Content-Based | 0.0083 | 0.0035 | 9.9376% | 14.4408 |
+| Biased MF (SQ) | 0.0264 | 0.0090 | 0.1091% | 11.1796 |
+| **BPR MF** | **0.0289** | **0.0105** | **0.2473%** | **10.5064** |
 
-### Key Engineering Diagnostics
-1.  **The "Implicit Zero" Problem:** Standard Matrix Factorization using squared-loss (Biased MF) collapsed catastrophically on our implicit check-in data, treating all unobserved items as absolute negatives. This resulted in an unacceptable Catalog Coverage of 0.40%.
-2.  **BPR Matrix Factorization:** By shifting the objective to Bayesian Personalized Ranking (pairwise ranking via negative sampling), we successfully solved the implicit zero problem. BPR MF currently stands as our champion model, beating the Popularity baseline in Accuracy (`0.0166`) while simultaneously increasing Catalog Coverage by 20x (`2.03%`).
-3.  **Latent Semantics:** Diagnostic checks confirm that the BPR latent vectors successfully map human behavior into semantic space without using metadata (e.g., retrieving 'Coffee Shop' and 'Bakery' as the nearest latent neighbors for 'Park').
+## Key Findings So Far
+
+1. **Popularity is a very strong baseline.**  
+   On Food.com, recommending globally popular recipes is surprisingly hard to beat on accuracy.
+
+2. **BPR MF is the strongest personalized collaborative model so far.**  
+   It performs close to popularity while remaining a true personalized recommender.
+
+3. **Content-Based dramatically improves coverage.**  
+   It is much weaker than BPR on accuracy, but vastly better in catalog coverage and novelty.
+
+4. **The current kNN implementation does not scale to the full Food.com item catalog.**  
+   For this reason, it is disabled in the full baseline notebook run.
+
+5. **Strict temporal splitting matters.**  
+   We explicitly remove users with tied final timestamps so that the last interaction is temporally identifiable.
+
+## Next Steps
+- improve content feature preprocessing for Food.com list-like metadata
+- test a hybrid of BPR MF and Content-Based recommendations
+- tune BPR hyperparameters
+- compare stronger diversity / coverage trade-offs
