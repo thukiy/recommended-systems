@@ -252,6 +252,29 @@ class ContentBasedRecommender:
         profile = self.user_profiles[user_id]
         return cosine_similarity(profile, self.item_feature_matrix).ravel()
 
+    def score(self, user_id, item_id):
+        """
+        Returns cosine-style relevance score between
+        the user profile and a specific item.
+
+        Used as an interaction feature for the LTR ranker.
+        """
+
+        if (
+            user_id not in self.user_profiles or
+            item_id not in self.item_mapping
+        ):
+            return 0.0
+
+        profile = self.user_profiles[user_id]
+        item_idx = self.item_mapping[item_id]
+
+        item_vec = self.item_feature_matrix[item_idx]
+
+        score = profile.multiply(item_vec).sum()
+
+        return float(score)
+
     def _explain_item(self, profile, item_idx, top_n=3):
         item_vec = self.item_feature_matrix.getrow(item_idx)
         overlap = profile.multiply(item_vec)

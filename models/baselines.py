@@ -14,12 +14,14 @@ class PopularityRecommender:
 
     def __init__(self):
         self.popular_items = []
+        self.popularity_scores = {}
 
     def fit(self, train_df, item_col='recipe_id'):
         print("Training Popularity Baseline...")
 
         # Count how often each recipe appears in the training data
         item_counts = train_df[item_col].value_counts()
+        self.popularity_scores = item_counts.to_dict()
 
         # Store recipes sorted from most to least popular
         self.popular_items = item_counts.index.tolist()

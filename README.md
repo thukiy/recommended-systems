@@ -1,4 +1,4 @@
-# Food.com Recipe Recommender
+# NEEDS TO BE UPDATED! Food.com Recipe Recommender
 
 **Course:** CDS121 - Recommender Systems  
 **Institution:** Fachhochschule Graubünden (FHGR)  

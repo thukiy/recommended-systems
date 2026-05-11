@@ -233,3 +233,22 @@ class BPRMatrixFactorization:
 
         top_k_indices = np.argsort(scores)[-k:][::-1]
         return [self.reverse_item_mapping[idx] for idx in top_k_indices]
+    
+    def score(self, user_id, item_id):
+        """
+        Returns the latent interaction score between a user and item.
+        Used as an interaction feature for LTR reranking.
+        """
+
+        if (
+            user_id not in self.user_mapping or
+            item_id not in self.item_mapping
+        ):
+            return 0.0
+
+        u = self.user_mapping[user_id]
+        i = self.item_mapping[item_id]
+
+        return float(
+            np.dot(self.P[u], self.Q[i]) + self.b_i[i]
+        )
