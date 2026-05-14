@@ -9,6 +9,7 @@ dependencies:
   - scikit-learn
   - matplotlib
   - jupyter
+  - faiss-cpu
 
 # To create the environment, run:
 # conda env create -f environment.yml
