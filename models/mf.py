@@ -9,12 +9,13 @@ class BiasedMatrixFactorization:
     Learns shared latent structure using user and item factors alongside global and per-entity biases.
     """
 
-    def __init__(self, k_factors=16, learning_rate=0.01, reg=0.02, epochs=5):
+    def __init__(self, k_factors=16, learning_rate=0.05, reg=0.01, epochs=10, popularity_penalty_beta=0.0):
         self.k = k_factors
         self.lr = learning_rate
         self.reg = reg
         self.epochs = epochs
-
+        self.popularity_penalty_beta = popularity_penalty_beta
+        self.item_popularity_vector = None
         self.user_mapping = {}
         self.item_mapping = {}
         self.reverse_item_mapping = {}
@@ -51,6 +52,13 @@ class BiasedMatrixFactorization:
 
         # Keep a popularity-based fallback for cold-start users
         self.popular_fallback = train_df[item_col].value_counts().index.tolist()
+        item_counts = train_df[item_col].value_counts()
+
+        self.item_popularity_vector = np.zeros(num_items)
+
+        for item_id, count in item_counts.items():
+            if item_id in self.item_mapping:
+                self.item_popularity_vector[self.item_mapping[item_id]] = count
 
         # Prepare interaction data for efficient training
         user_indices = train_df[user_col].map(self.user_mapping).values
@@ -134,11 +142,13 @@ class BPRMatrixFactorization:
     Optimizes for pairwise ranking (item i > item j) instead of point-wise scores.
     """
 
-    def __init__(self, k_factors=16, learning_rate=0.05, reg=0.01, epochs=10):
+    def __init__(self, k_factors=16, learning_rate=0.05, reg=0.01, epochs=10, popularity_penalty_beta=0.0):
         self.k = k_factors
         self.lr = learning_rate
         self.reg = reg
         self.epochs = epochs
+        self.popularity_penalty_beta = popularity_penalty_beta
+        self.item_popularity_vector = None
 
         self.user_mapping = {}
         self.item_mapping = {}
@@ -169,6 +179,13 @@ class BPRMatrixFactorization:
         self.b_i = np.zeros(num_items)
 
         self.popular_fallback = train_df[item_col].value_counts().index.tolist()
+
+        item_counts = train_df[item_col].value_counts()
+        self.item_popularity_vector = np.zeros(num_items)
+
+        for item_id, count in item_counts.items():
+            if item_id in self.item_mapping:
+                self.item_popularity_vector[self.item_mapping[item_id]] = count
 
         user_indices = train_df[user_col].map(self.user_mapping).values
         item_indices = train_df[item_col].map(self.item_mapping).values
@@ -225,6 +242,9 @@ class BPRMatrixFactorization:
 
         # Calculate scores for all items
         scores = self.b_i + np.dot(self.Q, self.P[u_idx])
+
+        if self.popularity_penalty_beta > 0 and self.item_popularity_vector is not None:
+            scores = scores - self.popularity_penalty_beta * np.log1p(self.item_popularity_vector)
 
         # Seen-item filtering
         for item in user_history:

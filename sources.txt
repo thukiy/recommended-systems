@@ -1,0 +1,24 @@
+
+An AI-based nutrition recommendation system: technical validation with insights from Mediterranean cuisine
+DOI: 10.3389/fnut.2025.1546107
+https://pubmed.ncbi.nlm.nih.gov/40896193/ 2025
+
+An interactive food recommendation system using reinforcement learning
+https://doi-org.ezproxy.fhgr.ch/10.1016/j.eswa.2024.124313
+https://www-sciencedirect-com.ezproxy.fhgr.ch/science/article/pii/S0957417424011795 2024
+
+Approaches for Extending Recommendation Models for Food Choices in Meals
+doi={10.5220/0013014000003838}, isbn={978-989-758-716-0},
+https://www.scitepress.org/PublishedPapers/2024/130140/ 2024
+
+Food Recommender Systems: Important Contributions, Challenges and Future Research Directions
+https://doi.org/10.48550/arXiv.1711.02760
+https://arxiv.org/abs/1711.02760  2017
+
+Generative AI-based Meal Recommender System
+https://doi.org/10.33093/jiwe.2025.4.2.20
+https://journals.mmupress.com/index.php/jiwe/article/view/1653 2024
+
+Improving healthy food recommender systems through heterogeneous hypergraph learning
+https://doi.org/10.1016/j.eij.2024.100570
+https://www.sciencedirect.com/science/article/pii/S1110866524001336 2024
