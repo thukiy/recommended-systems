@@ -10,6 +10,8 @@ dependencies:
   - matplotlib
   - jupyter
   - faiss-cpu
+  - networkx
+  - tqdm
 
 # To create the environment, run:
 # conda env create -f environment.yml

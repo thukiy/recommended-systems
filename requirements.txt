@@ -4,6 +4,9 @@ scipy
 scikit-learn
 matplotlib
 jupyter
+faiss-cpu
+networkx
+tqdm
 
 # To install the dependencies, run:
 # pip install -r requirements.txt
