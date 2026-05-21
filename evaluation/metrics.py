@@ -71,3 +71,33 @@ def catalog_coverage_at_k(all_recommended_items_lists, total_catalog_size):
         unique_recommended_items.update(rec_list)
 
     return len(unique_recommended_items) / total_catalog_size
+
+
+def snips_recall_at_k(recommended_items, true_items, train_item_counts, k=20, tau=0.05):
+    """
+    Self-Normalized Inverse Propensity Scoring (SNIPS) Recall@K.
+    Debiases evaluation by rewarding the model more for retrieving rare/long-tail items.
+    """
+    top_k_recs = recommended_items[:k]
+
+    # Normalization factor for propensities
+    max_count = max(train_item_counts.values()) if train_item_counts else 1.0
+
+    numerator = 0.0
+    denominator = 0.0
+
+    for item in true_items:
+        count = train_item_counts.get(item, 0)
+
+        # Propensity p_i is proportional to sqrt(popularity), clipped at tau to prevent infinite variance
+        p_i = max(tau, np.sqrt(count / max_count))
+        inv_p_i = 1.0 / p_i
+
+        denominator += inv_p_i
+        if item in top_k_recs:
+            numerator += inv_p_i
+
+    if denominator == 0:
+        return 0.0
+
+    return numerator / denominator
