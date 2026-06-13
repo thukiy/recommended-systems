@@ -186,7 +186,7 @@ class ContentBasedRecommender:
     def fit(self, train_df, items_df, user_col='user_id', item_col='recipe_id'):
         from sklearn.feature_extraction.text import TfidfVectorizer
 
-        print("Training Content-Based Recommender...")
+        print("Training Content-Based Recommender (with proper Cold-Start handling)...")
 
         if item_col not in train_df.columns:
             raise ValueError(f"'{item_col}' missing in train_df.")
@@ -198,7 +198,8 @@ class ContentBasedRecommender:
         self.popular_fallback = train_df[item_col].value_counts().index.tolist()
 
         items_unique = items_df.drop_duplicates(subset=[item_col]).copy()
-        items_unique = items_unique[items_unique[item_col].isin(train_df[item_col].unique())]
+
+        train_item_ids = set(train_df[item_col].unique())
 
         text_cols, metadata_cols = self._resolve_feature_columns(items_unique, item_col)
 
@@ -226,9 +227,16 @@ class ContentBasedRecommender:
             for _, row in items_unique.iterrows()
         ]
 
+        train_indices = [idx for item, idx in self.item_mapping.items() if item in train_item_ids]
+        train_item_docs = [item_docs[i] for i in train_indices]
+
         self.vectorizer = TfidfVectorizer(min_df=self.min_df, ngram_range=self.ngram_range)
-        self.item_feature_matrix = self.vectorizer.fit_transform(item_docs)
+
+        self.vectorizer.fit(train_item_docs)
+
+        self.item_feature_matrix = self.vectorizer.transform(item_docs)
         self.feature_names = self.vectorizer.get_feature_names_out()
+
         print(f"Feature dimension: {self.item_feature_matrix.shape[1]}")
         print(f"Vocabulary size: {len(self.feature_names)}")
         if len(self._feature_missing_rates) > 0:
@@ -236,6 +244,7 @@ class ContentBasedRecommender:
 
         effective_event_col = self.event_col if self.event_col in train_df.columns else None
         effective_time_col = self.time_col if self.time_col in train_df.columns else None
+
         self._build_user_profiles(
             train_df=train_df,
             user_col=user_col,
@@ -244,7 +253,8 @@ class ContentBasedRecommender:
             time_col=effective_time_col,
         )
 
-        print(f"Content model trained with {len(self.item_mapping)} items and {len(self.user_profiles)} user profiles.")
+        print(
+            f"Content model trained with {len(self.item_mapping)} total items and {len(self.user_profiles)} user profiles.")
 
     def _score_all_items(self, user_id):
         from sklearn.metrics.pairwise import cosine_similarity
