@@ -110,6 +110,7 @@ class ContentBasedRecommender:
 
     def _resolve_feature_columns(self, items_unique, item_col):
         if self.feature_cols is not None:
+            # Legacy path: treat old feature_cols as text-style inputs.
             cols = [c for c in self.feature_cols if c in items_unique.columns and c != item_col]
             return cols, []
 
@@ -136,10 +137,12 @@ class ContentBasedRecommender:
         return resolved_text_cols, resolved_metadata_cols
 
     def _interaction_weight(self, row, reference_time, event_col, time_col):
+        # Event weights let stronger signals, e.g. ratings or favorites, shape the profile more.
         base_weight = 1.0
         if event_col is not None and event_col in row and event_col in self.event_weight_map:
             base_weight = float(self.event_weight_map[row[event_col]])
 
+        # Optional recency decay gives newer interactions more influence than older ones.
         if self.recency_decay <= 0.0 or reference_time is None or time_col is None or pd.isna(row[time_col]):
             return base_weight
 
@@ -178,6 +181,7 @@ class ContentBasedRecommender:
             if denom <= 0:
                 continue
 
+            # User profile = weighted average of all item vectors the user interacted with.
             user_matrix = self.item_feature_matrix[mapped_indices]
             weighted = user_matrix.multiply(weight_array[:, None])
             profile = weighted.sum(axis=0) / denom
@@ -197,6 +201,7 @@ class ContentBasedRecommender:
 
         self.popular_fallback = train_df[item_col].value_counts().index.tolist()
 
+        # Train only on items that appear in the interaction data so mappings stay aligned.
         items_unique = items_df.drop_duplicates(subset=[item_col]).copy()
 
         train_item_ids = set(train_df[item_col].unique())
@@ -217,6 +222,7 @@ class ContentBasedRecommender:
             c: float(items_unique[c].isna().mean()) for c in all_feature_cols
         }
 
+        # Convert each recipe into one synthetic document for TF-IDF vectorization.
         item_docs = [
             self._item_to_document(
                 row,
@@ -244,7 +250,11 @@ class ContentBasedRecommender:
 
         effective_event_col = self.event_col if self.event_col in train_df.columns else None
         effective_time_col = self.time_col if self.time_col in train_df.columns else None
+<<<<<<< HEAD
 
+=======
+        # Build one sparse vector per user after all recipe vectors are available.
+>>>>>>> b49fa26940c082c61aaa5e74c320923c308eb54d
         self._build_user_profiles(
             train_df=train_df,
             user_col=user_col,
@@ -287,6 +297,7 @@ class ContentBasedRecommender:
 
     def _explain_item(self, profile, item_idx, top_n=3):
         item_vec = self.item_feature_matrix.getrow(item_idx)
+        # Explanations use only features shared by the user profile and candidate item.
         overlap = profile.multiply(item_vec)
         if overlap.nnz == 0:
             return "Recommended due to overall profile match."
@@ -301,6 +312,7 @@ class ContentBasedRecommender:
     def recommend(self, user_id, user_history, k=10, return_explanations=False):
         user_history_set = set(user_history)
 
+        # Cold users have no content profile, so fall back to globally popular unseen items.
         if user_id not in self.user_profiles:
             recs = []
             for item in self.popular_fallback:
@@ -315,6 +327,7 @@ class ContentBasedRecommender:
         profile = self.user_profiles[user_id]
         scores = self._score_all_items(user_id)
 
+        # Do not recommend recipes the user has already interacted with.
         for item in user_history_set:
             if item in self.item_mapping:
                 scores[self.item_mapping[item]] = -np.inf
@@ -323,6 +336,7 @@ class ContentBasedRecommender:
         recs = [self.reverse_item_mapping[idx] for idx in top_indices if np.isfinite(scores[idx])]
 
         if len(recs) < k:
+            # Fill short recommendation lists with popular items if content scores are exhausted.
             recs_set = set(recs)
             for item in self.popular_fallback:
                 if item not in user_history_set and item not in recs_set:

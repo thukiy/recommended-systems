@@ -70,12 +70,15 @@ class PersonalizedPageRankRecommender:
 
         df = train_df[[user_col, item_col]].drop_duplicates().copy()
 
+        # Keep a global fallback list for cold users or sparse graph neighborhoods.
         self.popular_fallback = train_df[item_col].value_counts().index.tolist()
 
+        # Store the bipartite graph in both directions for cheap neighbor lookups.
         for user_id, item_id in zip(df[user_col].values, df[item_col].values):
             self.user_to_items[user_id].append(item_id)
             self.item_to_users[item_id].append(user_id)
 
+        # Any previous cached rankings are invalid after rebuilding the graph.
         self._cache = {}
 
         n_users = len(self.user_to_items)
@@ -85,11 +88,13 @@ class PersonalizedPageRankRecommender:
 
     def _stable_seed(self, user_id):
         base = 0 if self.random_state is None else int(self.random_state)
+        # Derive a deterministic per-user seed so cached and repeated calls are stable.
         digest = hashlib.md5(str(user_id).encode("utf-8")).hexdigest()
         user_seed = int(digest[:8], 16)
         return (base + user_seed) % (2**32)
 
     def _neighbors(self, node_type, node_id):
+        # The graph alternates between user nodes and item nodes.
         if node_type == "user":
             return [("item", item_id) for item_id in self.user_to_items.get(node_id, [])]
         if node_type == "item":
@@ -101,6 +106,7 @@ class PersonalizedPageRankRecommender:
         scores = Counter()
 
         if user_id not in self.user_to_items:
+            # Cold users cannot start a meaningful walk; recommend() will use fallback items.
             return scores
 
         for _ in range(self.n_walks):
@@ -132,6 +138,7 @@ class PersonalizedPageRankRecommender:
         seen_items = set(user_history)
         cache_key = user_id
 
+        # Evaluation often asks for the same user repeatedly with different k values.
         if self.cache_recommendations and cache_key in self._cache:
             cached = self._cache[cache_key]
             if len(cached) >= k:
@@ -145,6 +152,7 @@ class PersonalizedPageRankRecommender:
             if item_id not in seen_items
         ]
 
+        # Cache a larger candidate pool than requested so later larger k calls can reuse it.
         ranked_set = set(ranked_items)
         target_len = max(k, self.max_cache_items if self.cache_recommendations else k)
 
